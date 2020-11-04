@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>wifi店舗取得アプリ</title>
+  <!-- <link rel="stylesheet" href="style.css"> -->
+     <!-- BootstrapのCSS読み込み -->
+     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+       <!-- jQuery(Ajax用)の読み込み -->
+    <script src="https://code.jquery.com/jquery-3.3.1.js"></script>
+</head>
+  <!-- 動作処理 -->
+  <script>
+    // 現在地取得処理
+    function initMap() {
+      // Geolocation APIに対応している
+      if (navigator.geolocation) {
+        // 現在地を取得
+        navigator.geolocation.getCurrentPosition(sucsess,error);
+          // 取得成功した場合
+          function sucsess(position) {
+            // 緯度・経度を変数に格納　トライ用東京駅位置：35.6809591 139.7673068
+            var lat = 35.6809591;
+            var lng = 139.7673068;
+
+        //    var lat = position.coords.latitude;
+        //    var lng = position.coords.longitude;
+            var myPosition = new google.maps.LatLng(lat, lng);
+            // マップオプションを変数に格納
+            var Options = {
+              zoom : 16,        
+              center : myPosition  
+            };
+            // マップオブジェクト作成
+            var map = new google.maps.Map(document.getElementById("map"), Options);
+            //　マップにマーカーを表示する
+            var marker = new google.maps.Marker({
+              map : map,  
+              position : myPosition  
+            });
+            // 35.6809591 139.767306
+            // https://api.gnavi.co.jp/RestSearchAPI/v3/?keyid=0b20ce768872c0b3fd3aa91b01c3d11e&wifi=1&latitude=33.7358622&longitude=130.9687738&range=4&category_l=RSFST20000&category_l=RSFST18000
+            $.ajax({
+            type : "get",
+            //API取得条件（wifi有り、周囲2キロ）
+            url:"https://api.gnavi.co.jp/RestSearchAPI/v3/?keyid=0b20ce768872c0b3fd3aa91b01c3d11e&wifi=1&latitude="+lat+"=&longitude="+lng+"&range=4",
+            dataType : 'json',
+            success　: function(json){
+                let num_shop = json.rest.length;
+                console.log(num_shop);
+                    for( let i=0; i < num_shop; i++){
+                    var shopLat = json.rest[i].latitude;
+                    var shopLng = json.rest[i].longitude;
+                    var shopPosition = new google.maps.LatLng(shopLat, shopLng);
+                    var shopMaker = new google.maps.Marker({
+                        map : map,
+                        position : shopPosition,
+                        icon: {
+                            path: google.maps.SymbolPath.CIRCLE, //円を指定
+                            fillColor: "#FF0000",                //背景色
+                            fillOpacity: 0.8,                    //透過率
+                            strokeColor: "#000",                 //枠の色
+                            strokeWeight: 1.0 ,                   //枠の透過率
+                            scale: 13,                           //サイズ
+                        },
+                        label:{
+                            text:String(i+1),
+                            fontSize:'18px',
+                            color:'#000'
+                        },
+                        
+                    });
+                    console.log(json.rest[i]);
+                    var checkImg = json.rest[i].image_url.shop_image1;
+                    if(checkImg === ""){
+                        json.rest[i].image_url.shop_image1 ="noimage.jpg";
+                    }
+                    var checkLunch = json.rest[i].lunch;
+                    if(checkLunch === ""){
+                        json.rest[i].lunch ="−";
+                    }
+
+                    //テーブル出力
+//                    $('<tr><td>'+ String(i+1) + '</td><td><a href="'+ json.rest[i].url +'">'+ json.rest[i].name +'</a></td><td><a href="'+ json.rest[i].url +'"><img style="width:80px" src=' + json.rest[i].image_url.shop_image1 + '></a></td><td>' + json.rest[i].opentime + '</td><td>¥' + json.rest[i].lunch + '</td></tr>').appendTo('table');
+                     $('<tr><td>'+ String(i+1) + '</td><td><a href="'+ json.rest[i].url +'">'+ json.rest[i].name +'</a><br><a href="'+ json.rest[i].url +'"><img class="image" src=' + json.rest[i].image_url.shop_image1 + '></a></td><td>' + json.rest[i].opentime + '</td><td>¥' + json.rest[i].lunch + '</td></tr>').appendTo('table');
+
+                    };            
+            }
+            })
+            //-------↑取得に成功した場合↑ーーーーーー
+        
+    };
+          // 取得失敗した場合
+            function error (error) {
+                var errorMessage = {
+                    0: "原因不明のエラーが発生しました。" ,
+                    1: "位置情報の取得が許可されませんでした。" ,
+                    2: "電波状況などで位置情報が取得できませんでした。" ,
+                    3: "位置情報の取得に時間がかかりタイムアウトしました。" ,
+                };
+                //エラーコードに合わせたエラー内容をアラート表示
+                alert(errorMessage[error.code]);
+            };
+      // Geolocation APIに対応していない
+      } else {
+        alert("この端末では位置情報が取得できません");
+      }
+    }
+  </script>
+  <style>
+    /* 共通 */
+    body {
+      font-family: "メイリオ", Meiryo, "ヒラギノ角ゴ Pro W3", "Hiragino Kaku Gothic Pro", "ＭＳ Ｐゴシック", "MS PGothic", sans-serif;
+      line-height:150%;
+    } 
+
+/* レスポンシブ */
+    #map {
+      width:auto;
+      height:500px;
+    }
+    table {
+      font-size:150%;
+    }
+    table tr td .image {
+      width:150px;
+    }
+
+    @media (max-width:550px) {
+      h1 {
+        font-size:150%;
+      }
+      #map {
+        width:auto;
+        height:350px;
+      }
+      table {
+        font-size:80%;
+      }
+      table tr td .image {
+        width:80px;
+    }
+    }
+
+  </style>
+<body>
+  <div class="container">
+    <div class="text-center">
+      <h1>Wi-Fi利用可能店舗検索アプリ</h1>
+    </div>
+      <div class="text-right">
+        <input type="button"  value="再読込" onclick="window.location.reload()">
+      </div>
+      <div id="map"></div>
+    <br>
+    <table id="table" class="table table-hover">
+      <tr class="bg-info">
+        <th class="text-nowrap text-center">No.</th>
+        <th class="text-nowrap text-center">店舗</th>
+        <th class="text-nowrap text-center">営業時間</th>
+        <th class="text-nowrap text-center">価格帯</th>      
+      </tr>
+    </table>
+  </div>
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD2p2zqzj_XjeBrVChPzZrfcJXeh1eItDM&callback=initMap"></script>
+</body>
+</html>
